@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vendelo-plus-v7'; // Nueva versión para forzar actualización
+const CACHE_NAME = 'vendelo-plus-v8'; // Nueva versión para forzar el logo
 const ASSETS = [
   'index.html',
   'manifest.json',
@@ -30,9 +30,7 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Siempre pedir datos reales a Google Apps Script
   if (event.request.url.includes('script.google.com')) return;
-  
   event.respondWith(
     caches.match(event.request)
       .then(response => response || fetch(event.request))
