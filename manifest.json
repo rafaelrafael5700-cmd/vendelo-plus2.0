@@ -1,0 +1,21 @@
+{
+  "name": "Véndelo Plus CRM",
+  "short_name": "Véndelo+",
+  "description": "Sistema de Gestión y CRM Profesional",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "icono.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icono.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
