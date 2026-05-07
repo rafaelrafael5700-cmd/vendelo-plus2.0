@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Maestro - Véndelo Plus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight italic">VÉNDELO+ <span class="text-blue-600">MASTER</span></h1>
+                <p class="text-slate-500 font-medium">Control Centralizado de Licencias y Clientes</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="switchTab('clientes')" id="tab-btn-clientes" class="bg-blue-600 text-white px-4 py-2 rounded-2xl shadow-sm border border-blue-600 transition-all font-bold text-xs uppercase">
+                    CLIENTES
+                </button>
+                <button onclick="switchTab('planes')" id="tab-btn-planes" class="bg-white text-slate-600 px-4 py-2 rounded-2xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all font-bold text-xs uppercase">
+                    PLANES
+                </button>
+                <button onclick="switchTab('config')" id="tab-btn-config" class="bg-white text-slate-600 px-4 py-2 rounded-2xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all font-bold text-xs uppercase">
+                    CONFIG
+                </button>
+                <button onclick="refreshData()" class="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all font-bold text-slate-700 text-xs">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+    <div id="section-clientes">
+        <!-- Dashboard Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div onclick="setFilter('todos')" class="glass p-6 rounded-3xl shadow-sm cursor-pointer hover:border-blue-300 transition-all group">
+                <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1 group-hover:text-blue-500">Total Clientes</p>
+                <h3 id="stat-total" class="text-3xl font-black text-slate-800">0</h3>
+            </div>
+            <div onclick="setFilter('activos')" class="glass p-6 rounded-3xl shadow-sm cursor-pointer hover:border-green-300 transition-all group">
+                <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1 group-hover:text-green-500">Licencias Activas</p>
+                <h3 id="stat-activas" class="text-3xl font-black text-green-600">0</h3>
+            </div>
+            <div onclick="setFilter('alertas')" class="glass p-6 rounded-3xl shadow-sm cursor-pointer hover:border-red-300 transition-all group">
+                <p class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1 group-hover:text-red-500">Vencidas / Bloqueadas</p>
+                <h3 id="stat-alertas" class="text-3xl font-black text-red-600">0</h3>
+            </div>
+        </div>
+
+        <!-- Search and Table Header -->
+        <div class="mb-4 flex flex-col md:flex-row justify-between items-center gap-4 px-2">
+            <div class="flex items-center gap-4 w-full md:w-auto flex-1">
+                <div class="relative w-full max-w-md">
+                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                    <input type="text" id="client-search" oninput="applyFilters()" placeholder="Buscar por nombre, correo o ID..." 
+                        class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm font-medium">
+                </div>
+                <div id="filter-indicator" class="hidden md:block text-[10px] font-black text-blue-600 uppercase italic bg-blue-50 px-3 py-1 rounded-lg border border-blue-100 whitespace-nowrap">
+                    Mostrando: TODOS
+                </div>
+            </div>
+            <button onclick="mostrarModalRegistro()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl shadow-lg hover:shadow-blue-200 transition-all font-bold text-xs uppercase flex items-center justify-center gap-2 whitespace-nowrap w-full md:w-auto">
+                <i data-lucide="user-plus" class="w-4 h-4"></i> NUEVO USUARIO
+            </button>
+        </div>
+
+        <!-- Clients Table -->
+        <div class="glass rounded-3xl shadow-xl overflow-hidden border border-slate-200">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-slate-50/50 border-bottom border-slate-100">
+                            <th class="p-4 text-xs font-black text-slate-400 uppercase tracking-widest">Cliente</th>
+                            <th class="p-4 text-xs font-black text-slate-400 uppercase tracking-widest">ID Sistema</th>
+                            <th class="p-4 text-xs font-black text-slate-400 uppercase tracking-widest">Estatus</th>
+                            <th class="p-4 text-xs font-black text-slate-400 uppercase tracking-widest">Vencimiento</th>
+                            <th class="p-4 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clients-body" class="divide-y divide-slate-100">
+                        <!-- Loading state -->
+                        <tr>
+                            <td colspan="5" class="p-12 text-center text-slate-400 italic">Cargando base de datos maestra...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Planes -->
+    <div id="section-planes" class="hidden">
+        <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 p-8">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-900 italic uppercase">Editor de Planes</h2>
+                    <p class="text-slate-500 font-medium">Personaliza los precios y características</p>
+                </div>
+                <button onclick="savePlanes()" class="bg-green-600 text-white px-8 py-3 rounded-2xl shadow-lg hover:shadow-green-200 transition-all font-bold text-xs uppercase tracking-widest">
+                    GUARDAR CAMBIOS
+                </button>
+            </div>
+            
+            <div id="planes-container" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Cards de planes dinámicas -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Configuración -->
+    <div id="section-config" class="hidden">
+        <div class="bg-white rounded-[3rem] shadow-xl border border-slate-100 p-8">
+            <div class="mb-8">
+                <h2 class="text-2xl font-black text-slate-900 italic uppercase">Configuración Global</h2>
+                <p class="text-slate-500 font-medium">Ajustes generales del ecosistema Véndelo+</p>
+            </div>
+            
+            <div class="max-w-md space-y-6">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">WhatsApp de Soporte (Ej: 584245595380)</label>
+                    <div class="relative">
+                        <i data-lucide="phone" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                        <input type="text" id="cfg-wa-soporte" 
+                            class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700" 
+                            placeholder="584120000000">
+                    </div>
+                    <p class="mt-2 text-[10px] text-slate-400 font-medium px-2">Este número aparecerá en el botón de "Contactar Soporte" cuando una licencia sea bloqueada.</p>
+                </div>
+                
+                <button onclick="saveConfigMaestro()" id="btn-save-config" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl shadow-lg hover:shadow-blue-200 transition-all font-black text-xs uppercase flex items-center justify-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i> GUARDAR CONFIGURACIÓN
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Modal Nuevo Usuario -->
+    <div id="modal-registro" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-slate-100 transform transition-all scale-95 opacity-0" id="modal-registro-content">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-900 tracking-tight">Nuevo Usuario</h2>
+                    <p class="text-slate-500 text-sm">Crear cuenta y base de datos</p>
+                </div>
+                <button onclick="cerrarModalRegistro()" class="text-slate-400 hover:text-red-500 transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nombre Completo</label>
+                    <input type="text" id="reg-admin-nombre" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium" placeholder="Ej. Juan Pérez">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Correo Electrónico</label>
+                    <input type="email" id="reg-admin-correo" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium" placeholder="juan@empresa.com">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Usuario (ID)</label>
+                    <input type="text" id="reg-admin-usuario" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium" placeholder="juanperez">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Contraseña</label>
+                    <input type="password" id="reg-admin-pass" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium" placeholder="••••••••">
+                </div>
+                <div class="pt-4">
+                    <button onclick="registrarDesdeAdmin()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 hover:shadow-blue-200 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="database" class="w-4 h-4"></i> CREAR BASE DE DATOS
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script para interactuar con Google Apps Script -->
+    <script>
+        const MASTER_URL = "https://script.google.com/macros/s/AKfycbzMG6-c83fT4_jPIANihCC7DNpenjhKJ1um0dlpEsr2bm4pXdbQ5S7LcAFxv7J3ycqLwQ/exec";
+
+        let allClients = [];
+        let allPlanes = [];
+        let currentFilter = 'todos';
+
+        function switchTab(tab) {
+            document.getElementById('section-clientes').classList.toggle('hidden', tab !== 'clientes');
+            document.getElementById('section-planes').classList.toggle('hidden', tab !== 'planes');
+            document.getElementById('section-config').classList.toggle('hidden', tab !== 'config');
+            
+            // Actualizar estilos botones
+            const tabs = ['clientes', 'planes', 'config'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (btn) {
+                    if (t === tab) {
+                        btn.className = "bg-blue-600 text-white px-4 py-2 rounded-2xl shadow-sm border border-blue-600 transition-all font-bold text-xs uppercase";
+                    } else {
+                        btn.className = "bg-white text-slate-600 px-4 py-2 rounded-2xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all font-bold text-xs uppercase";
+                    }
+                }
+            });
+
+            if (tab === 'planes') loadPlanes();
+            if (tab === 'config') loadConfigMaestro();
+        }
+
+        async function loadPlanes() {
+            const container = document.getElementById('planes-container');
+            container.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400 italic">Cargando planes...</div>';
+            
+            try {
+                const response = await fetch(`${MASTER_URL}?accion=obtenerPlanes`);
+                allPlanes = await response.json();
+                renderPlanes();
+            } catch (error) {
+                container.innerHTML = '<div class="col-span-full py-12 text-center text-red-400 font-bold">Error al cargar planes.</div>';
+            }
+        }
+
+        function renderPlanes() {
+            const container = document.getElementById('planes-container');
+            container.innerHTML = allPlanes.map((p, index) => `
+                <div class="bg-slate-50 rounded-[2rem] p-6 border border-slate-100 hover:border-blue-200 transition-all group">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center font-black">
+                            ${index + 1}
+                        </div>
+                        <input type="text" value="${p.nombre}" onchange="updatePlanLocal(${index}, 'nombre', this.value)" 
+                            class="bg-transparent border-none text-xl font-black text-slate-800 uppercase focus:ring-0 w-full" placeholder="Nombre del Plan">
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Precio</label>
+                            <input type="text" value="${p.precio}" onchange="updatePlanLocal(${index}, 'precio', this.value)" 
+                                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-lg font-bold text-blue-600 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Duración (Días)</label>
+                            <input type="number" value="${p.dias || 30}" onchange="updatePlanLocal(${index}, 'dias', this.value)" 
+                                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Características (Separadas por coma)</label>
+                            <textarea onchange="updatePlanLocal(${index}, 'caracteristicas', this.value)" 
+                                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 focus:ring-2 focus:ring-blue-500 outline-none h-24 resize-none">${p.caracteristicas}</textarea>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updatePlanLocal(index, field, value) {
+            allPlanes[index][field] = value;
+        }
+
+        async function savePlanes() {
+            const btn = document.querySelector('button[onclick="savePlanes()"]');
+            const originalText = btn.innerText;
+            
+            try {
+                btn.innerText = "GUARDANDO...";
+                btn.disabled = true;
+                btn.classList.add('opacity-50');
+
+                // Para máxima compatibilidad con Google Apps Script, pasamos la acción en la URL
+                // y los datos de los planes en el cuerpo del POST como una cadena
+                const url = `${MASTER_URL}?accion=actualizarPlanes`;
+                const formData = new URLSearchParams();
+                formData.append('dataPlanes', JSON.stringify(allPlanes));
+
+                await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    mode: 'no-cors'
+                });
+                
+                // Feedback visual de éxito
+                btn.innerText = "¡GUARDADO!";
+                btn.classList.replace('bg-green-600', 'bg-blue-600');
+                
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50');
+                    btn.classList.replace('bg-blue-600', 'bg-green-600');
+                    loadPlanes(); // Recarga para confirmar
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error al guardar planes:', error);
+                btn.innerText = "ERROR AL GUARDAR";
+                btn.classList.replace('bg-green-600', 'bg-red-600');
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50');
+                    btn.classList.replace('bg-red-600', 'bg-green-600');
+                }, 3000);
+            }
+        }
+
+        function refreshData() {
+            const sections = {
+                'section-clientes': 'clientes',
+                'section-planes': 'planes',
+                'section-config': 'config'
+            };
+            let currentTab = 'clientes';
+            for (let id in sections) {
+                if (!document.getElementById(id).classList.contains('hidden')) {
+                    currentTab = sections[id];
+                    break;
+                }
+            }
+            
+            if (currentTab === 'clientes') loadClients();
+            else if (currentTab === 'planes') loadPlanes();
+            else if (currentTab === 'config') loadConfigMaestro();
+        }
+
+        async function loadConfigMaestro() {
+            try {
+                const resp = await fetch(`${MASTER_URL}?accion=obtenerConfigMaestro`);
+                const res = await resp.json();
+                if (res.ok && res.config) {
+                    document.getElementById('cfg-wa-soporte').value = res.config.wa_soporte || '';
+                    lucide.createIcons();
+                }
+            } catch (e) {
+                console.error("Error cargando config maestro:", e);
+            }
+        }
+
+        async function saveConfigMaestro() {
+            const btn = document.getElementById('btn-save-config');
+            const wa = document.getElementById('cfg-wa-soporte').value.trim();
+            
+            if (!wa) return Swal.fire({ icon: 'warning', title: 'Atención', text: 'El número de WhatsApp no puede estar vacío.' });
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> GUARDANDO...';
+                lucide.createIcons();
+
+                const response = await fetch(MASTER_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        accion: 'guardarConfigMaestro',
+                        clave: 'wa_soporte',
+                        valor: wa
+                    })
+                });
+                
+                // GAS suele dar error de CORS en POST exitoso si no se maneja redirect, 
+                // pero a veces el fetch falla aunque se guarde. 
+                // Recargamos para verificar.
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Guardado!',
+                    text: 'Configuración actualizada correctamente.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                
+            } catch (e) {
+                console.error("Error guardando config:", e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> GUARDAR CONFIGURACIÓN';
+                lucide.createIcons();
+            }
+        }
+
+        async function loadClients() {
+            const body = document.getElementById('clients-body');
+            body.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-slate-400 italic">Consultando servidor...</td></tr>';
+            
+            try {
+                // Cargamos planes primero si no están cargados para el selector
+                if (allPlanes.length === 0) {
+                    const resPlanes = await fetch(`${MASTER_URL}?accion=obtenerPlanes`);
+                    allPlanes = await resPlanes.json();
+                }
+
+                const response = await fetch(`${MASTER_URL}?accion=obtenerClientes`);
+                allClients = await response.json();
+                renderClients();
+            } catch (error) {
+                console.error("Error cargando clientes:", error);
+                body.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-red-400 italic">Error de conexión con el servidor maestro</td></tr>';
+            }
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.getElementById('filter-indicator').innerText = `Mostrando: ${filter.toUpperCase()}`;
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('client-search').value.toLowerCase();
+            const hoy = new Date();
+            hoy.setHours(0,0,0,0);
+
+            const filtered = allClients.filter(c => {
+                const vencimiento = new Date(c.Fecha_Vencimiento);
+                vencimiento.setHours(0,0,0,0);
+                const estaVencido = vencimiento < hoy;
+                const isBloqueado = c.Estatus === 'Bloqueado' || c.Estatus === 'Suspendido';
+                
+                // Filtro por categoría
+                if (currentFilter === 'activos' && (estaVencido || isBloqueado || c.Estatus === 'Inactivo')) return false;
+                if (currentFilter === 'alertas' && (!estaVencido && !isBloqueado)) return false;
+
+                // Filtro por búsqueda
+                const matchSearch = 
+                    (c.Nombre || "").toLowerCase().includes(searchTerm) ||
+                    (c.Correo || "").toLowerCase().includes(searchTerm) ||
+                    (c.ID_Sistema || c.ID || "").toString().toLowerCase().includes(searchTerm);
+                
+                return matchSearch;
+            });
+
+            displayClients(filtered);
+        }
+
+        function renderClients() {
+            // Actualizar estadísticas globales
+            const hoy = new Date();
+            hoy.setHours(0,0,0,0);
+            
+            let activas = 0;
+            let alertas = 0;
+
+            allClients.forEach(c => {
+                const vencimiento = new Date(c.Fecha_Vencimiento);
+                vencimiento.setHours(0,0,0,0);
+                const estaVencido = vencimiento < hoy;
+                const isBloqueado = c.Estatus === 'Bloqueado' || c.Estatus === 'Suspendido';
+
+                if (c.Estatus === 'Activo' && !estaVencido) activas++;
+                else if (isBloqueado || estaVencido) alertas++;
+            });
+
+            document.getElementById('stat-total').innerText = allClients.length;
+            document.getElementById('stat-activas').innerText = activas;
+            document.getElementById('stat-alertas').innerText = alertas;
+
+            applyFilters();
+        }
+
+        function displayClients(clients) {
+            const body = document.getElementById('clients-body');
+            body.innerHTML = '';
+            
+            const hoy = new Date();
+            hoy.setHours(0,0,0,0);
+
+            if (clients.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-slate-400 italic">No se encontraron clientes para este filtro</td></tr>';
+                return;
+            }
+
+            clients.forEach(c => {
+                const vencimiento = new Date(c.Fecha_Vencimiento);
+                vencimiento.setHours(0,0,0,0);
+                
+                const estaVencido = vencimiento < hoy;
+                const isBloqueado = c.Estatus === 'Bloqueado' || c.Estatus === 'Suspendido';
+                // Buscamos el ID en varias posibles propiedades según el servidor
+                const idSistema = (c.ID_Sistema || c.id_sistema || c.ID || c.id || c.Usuario || c.usuario || "").toString().trim();
+
+                let statusLabel = 'ACTIVO';
+                let statusClass = 'bg-green-100 text-green-700 border-green-200';
+
+                if (isBloqueado) {
+                    statusLabel = 'BLOQUEADO';
+                    statusClass = 'bg-red-100 text-red-700 border-red-200';
+                } else if (estaVencido) {
+                    statusLabel = 'VENCIDO';
+                    statusClass = 'bg-orange-100 text-orange-700 border-orange-200';
+                } else if (c.Estatus === 'Inactivo') {
+                    statusLabel = 'INACTIVO';
+                    statusClass = 'bg-slate-100 text-slate-500 border-slate-200';
+                }
+
+                body.innerHTML += `
+                    <tr class="hover:bg-slate-50/50 transition-colors border-b border-slate-100">
+                        <td class="p-4">
+                            <p class="font-black text-slate-800 uppercase italic text-sm">${c.Nombre || 'Sin Nombre'}</p>
+                            <p class="text-[9px] text-slate-400 font-bold tracking-tight uppercase">${c.Correo || 'Sin correo'}</p>
+                        </td>
+                        <td class="p-4 font-mono text-xs font-bold text-slate-500">${idSistema}</td>
+                        <td class="p-4">
+                            <span class="text-[9px] font-black px-3 py-1 rounded-full border ${statusClass} uppercase italic">
+                                ${statusLabel}
+                            </span>
+                        </td>
+                        <td class="p-4 text-xs font-bold ${estaVencido ? 'text-red-500' : 'text-slate-600'}">
+                            ${vencimiento.toLocaleDateString()}
+                        </td>
+                        <td class="p-4 text-right">
+                            <div class="flex justify-end items-center gap-2">
+                                <select onchange="aplicarPlanALicencia('${idSistema}', this)" 
+                                    class="bg-blue-600 text-white text-[9px] font-black px-3 py-2 rounded-xl hover:bg-blue-700 transition-all uppercase italic outline-none border-none cursor-pointer shadow-sm">
+                                    <option value="">APLICAR PLAN</option>
+                                    ${allPlanes.map(p => `<option value="${p.dias}|${p.nombre}">${p.nombre} (${p.dias}D)</option>`).join('')}
+                                </select>
+
+                                <button onclick="toggleBloqueo('${idSistema}', ${isBloqueado})" 
+                                    class="${isBloqueado ? 'bg-green-500 text-white shadow-lg shadow-green-100' : 'bg-slate-800 text-white'} text-[9px] font-black px-3 py-2 rounded-xl hover:opacity-80 transition-all uppercase italic">
+                                    ${isBloqueado ? 'DESBLOQUEAR' : 'BLOQUEAR'}
+                                </button>
+
+                                <button onclick="eliminarUsuario('${idSistema}')" 
+                                    class="bg-red-600 text-white text-[9px] font-black px-3 py-2 rounded-xl hover:bg-red-700 transition-all uppercase italic shadow-lg shadow-red-100">
+                                    <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        async function eliminarUsuario(id) {
+            const confirmacion = await Swal.fire({
+                title: '¿ELIMINAR USUARIO?',
+                text: "Esta acción es IRREVERSIBLE. Se borrará el acceso y TODA su base de datos en Google Drive.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'SÍ, BORRAR TODO',
+                cancelButtonText: 'CANCELAR',
+                background: '#1f2937',
+                color: '#fff'
+            });
+
+            if (confirmacion.isConfirmed) {
+                mostrarToast("ELIMINANDO USUARIO Y DRIVE...", "info");
+                
+                try {
+                    // La acción remota ahora espera la ejecución
+                    await ejecutarAccionRemota(id, 'eliminar');
+                    
+                    Swal.fire({
+                        title: '¡ELIMINADO!',
+                        text: 'El usuario y su base de datos han sido removidos con éxito.',
+                        icon: 'success',
+                        background: '#1f2937',
+                        color: '#fff',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } catch (error) {
+                    mostrarToast("ERROR AL ELIMINAR", "error");
+                }
+            }
+        }
+
+        async function aplicarPlanALicencia(id, select) {
+            const value = select.value;
+            if (!value) return;
+
+            const [dias, planNombre] = value.split('|');
+            if(confirm(`¿Aplicar ${planNombre} a ${id}?`)) {
+                await ejecutarAccionRemota(id, 'aplicarPlan', dias, planNombre);
+                select.value = ""; // Reset select
+            } else {
+                select.value = "";
+            }
+        }
+
+        async function toggleBloqueo(id, actualmenteBloqueado) {
+            const accion = actualmenteBloqueado ? 'desbloquear' : 'bloquear';
+            if(confirm(`¿Seguro que deseas ${accion.toUpperCase()} a ${id}?`)) {
+                await ejecutarAccionRemota(id, accion);
+            }
+        }
+
+        async function ejecutarAccionRemota(id, subAccion, dias = 30, nombrePlan = "") {
+            try {
+                const url = `${MASTER_URL}?accion=${subAccion}&subAccion=${subAccion}&id=${encodeURIComponent(id)}&dias=${dias}&nombrePlan=${encodeURIComponent(nombrePlan)}&_=${Date.now()}`;
+                
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                // Si el servidor responde ok:true o devuelve un objeto sin error, asumimos éxito
+                if (result.ok || (result && !result.error)) {
+                    location.reload();
+                    return true;
+                } else {
+                    Swal.fire({
+                        title: 'ERROR',
+                        text: result.error || "No se pudo realizar la acción.",
+                        icon: 'error',
+                        background: '#1f2937',
+                        color: '#fff'
+                    });
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error en acción remota:', error);
+                // En caso de error de red, recargamos igual para ver si el cambio se aplicó
+                setTimeout(() => location.reload(), 2000);
+                return false;
+            }
+        }
+
+        // --- Funciones del Modal de Registro ---
+        function mostrarModalRegistro() {
+            const modal = document.getElementById('modal-registro');
+            const content = document.getElementById('modal-registro-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+            
+            // Limpiar campos
+            document.getElementById('reg-admin-nombre').value = '';
+            document.getElementById('reg-admin-correo').value = '';
+            document.getElementById('reg-admin-usuario').value = '';
+            document.getElementById('reg-admin-pass').value = '';
+        }
+
+        function cerrarModalRegistro() {
+            const modal = document.getElementById('modal-registro');
+            const content = document.getElementById('modal-registro-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        async function registrarDesdeAdmin() {
+            const btn = document.querySelector('button[onclick="registrarDesdeAdmin()"]');
+            if (btn && btn.disabled) return;
+
+            const n = document.getElementById("reg-admin-nombre").value.trim().toUpperCase();
+            const cRaw = document.getElementById("reg-admin-correo").value.trim().toLowerCase();
+            const uRaw = document.getElementById("reg-admin-usuario").value.trim().toLowerCase();
+            const p = document.getElementById("reg-admin-pass").value.trim();
+
+            if (!n || !cRaw || !uRaw || !p) {
+                Swal.fire({ icon: 'error', title: 'Campos vacíos', text: 'COMPLETA TODOS LOS CAMPOS', background: '#fff', color: '#1e293b' });
+                return;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.dataset.originalText = btn.innerHTML;
+                btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Preparando entorno...';
+                btn.style.opacity = '0.7';
+                btn.style.cursor = 'not-allowed';
+                lucide.createIcons();
+            }
+
+            const correoValido = uRaw.includes('@') ? uRaw : (cRaw.includes('@') ? cRaw : uRaw + "@vendelo.plus");
+            const idLimpio = uRaw.split('@')[0];
+
+            Swal.fire({
+                title: 'Creando base de datos',
+                html: 'Estamos configurando el espacio de trabajo...<br><b>Esto puede tardar unos segundos.</b>',
+                allowOutsideClick: false,
+                background: '#fff',
+                color: '#1e293b',
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            try {
+                const url = `${MASTER_URL}?accion=registrarNuevoCliente&id=${encodeURIComponent(idLimpio)}&nombre=${encodeURIComponent(n)}&correo=${encodeURIComponent(correoValido)}&password=${encodeURIComponent(p)}`;
+                const resp = await fetch(url);
+                const res = await resp.json();
+
+                if (res.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Cuenta Creada!',
+                        text: 'La base de datos ha sido creada exitosamente.',
+                        confirmButtonColor: '#2563eb',
+                        background: '#fff',
+                        color: '#1e293b'
+                    }).then(() => {
+                        cerrarModalRegistro();
+                        loadClients(); // Recargar la tabla
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: res.error || "ERROR AL REGISTRAR", background: '#fff', color: '#1e293b' });
+                }
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Error de Conexión', text: 'No se pudo conectar con el servidor maestro', background: '#fff', color: '#1e293b' });
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = btn.dataset.originalText;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                    lucide.createIcons();
+                }
+            }
+        }
+
+        // Carga inicial
+        window.onload = () => {
+            loadClients();
+            lucide.createIcons();
+        };
+    </script>
+</body>
+</html>
