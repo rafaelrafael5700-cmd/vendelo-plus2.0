@@ -1,0 +1,65 @@
+{
+  "name": "Véndelo Plus CRM",
+  "short_name": "Véndelo+",
+  "description": "Sistema de Gestión y CRM Profesional para Negocios Modernos. Control de inventario, ventas y arqueo de caja.",
+  "start_url": "./index.html?utm_source=pwa",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icono.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icono.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icono.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icono.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["business", "finance", "productivity"],
+  "screenshots": [
+    {
+      "src": "icono.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard Véndelo Plus"
+    },
+    {
+      "src": "icono.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Punto de Venta Móvil"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Control de Caja",
+      "url": "/desktop.html#caja",
+      "icons": [{ "src": "icono.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Nueva Venta",
+      "url": "/mobile.html#venta",
+      "icons": [{ "src": "icono.png", "sizes": "192x192" }]
+    }
+  ]
+}
